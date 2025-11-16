@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sentinel — EchoGuard</title>
+
+<style>
+/* ---------------------------------------------------
+   THEME VARIABLES
+----------------------------------------------------*/
+:root{
+  --bg:#071022; --card:#0f1720; --muted:#9aa6b2; --text:#e6f3fb;
+  --accent:#00d0ff; --accent2:#00a3e6; --danger:#ff4b4b; --ok:#22d3a6;
+  --glass:rgba(255,255,255,0.03);
+}
+body.light{
+  --bg:#f7fbff; --card:#ffffff; --muted:#445566; --text:#071022;
+  --accent:#0077cc; --accent2:#005ea6; --danger:#d00000; --ok:#008a62;
+}
+
+/* ---------------------------------------------------
+   GLOBAL
+----------------------------------------------------*/
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter, Poppins, system-ui;
+  transition:background .3s, color .3s;
+}
+
+/* ---------------------------------------------------
+   HEADER
+----------------------------------------------------*/
+header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px;
+  border-bottom:1px solid var(--glass);
+  backdrop-filter:blur(6px);
+}
+.logo{
+  display:flex; gap:12px; align-items:center;
+  font-weight:900; font-size:20px; color:var(--accent);
+  letter-spacing:2px;
+}
+.logo img{width:44px; height:44px; border-radius:10px;}
+.controls{display:flex; gap:12px;}
+.btn{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border:none; padding:10px 16px;
+  color:#00121a; font-weight:700;
+  border-radius:10px; cursor:pointer;
+}
+.ghost{
+  background:transparent; border:1px solid var(--glass);
+  padding:8px 14px; border-radius:10px; color:var(--muted);
+  cursor:pointer;
+}
+
+/* ---------------------------------------------------
+   LAYOUT
+----------------------------------------------------*/
+.container{max-width:1200px; margin:24px auto; padding:0 20px;}
+.layout{display:grid; grid-template-columns:1fr 420px; gap:20px;}
+@media(max-width:1000px){ .layout{ grid-template-columns:1fr; } }
+
+.panel{
+  background:var(--card);
+  padding:20px; border-radius:14px;
+  border:1px solid var(--glass);
+  box-shadow:0 10px 30px rgba(2,6,23,0.6);
+}
+
+.title{font-size:22px; font-weight:800; color:var(--accent);}
+.muted{font-size:13px; color:var(--muted);}
+
+/* ---------------------------------------------------
+   PERMISSION CARDS
+----------------------------------------------------*/
+.perm-grid{display:flex; flex-direction:column; gap:12px; margin-top:16px;}
+
+.perm-card{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px; border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+  transition:transform .25s;
+}
+.perm-card:hover{ transform:translateY(-6px); }
+
+.perm-right{display:flex; gap:10px; flex-wrap:wrap;}
+
+/* ---------------------------------------------------
+   SWITCH
+----------------------------------------------------*/
+.switch{
+  width:56px; height:30px; border-radius:18px;
+  border:1px solid rgba(255,255,255,0.05);
+  position:relative; cursor:pointer;
+}
+.knob{
+  width:24px; height:24px;
+  background:white; border-radius:50%;
+  position:absolute; top:3px; left:3px;
+  transition:left .2s;
+}
+.switch.on{background:linear-gradient(90deg,var(--ok),#5cffd3);}
+.switch.on .knob{left:29px;}
+.switch.off{background:linear-gradient(90deg,var(--danger),#ff8a8a);}
+
+/* ---------------------------------------------------
+   LOGS
+----------------------------------------------------*/
+.log-box{
+  height:260px; overflow:auto;
+  background:rgba(255,255,255,0.03);
+  border-radius:10px; border:1px solid var(--glass);
+  padding:10px; margin-top:12px;
+}
+.log{
+  padding:10px; border-radius:8px; margin-bottom:10px;
+  background:rgba(255,255,255,0.05);
+}
+.log.critical{ border-left:4px solid var(--danger); }
+.log.info{ border-left:4px solid var(--ok); }
+
+/* ---------------------------------------------------
+   THREAT GAUGE
+----------------------------------------------------*/
+.dial{
+  width:150px; height:80px;
+  background:linear-gradient(90deg,rgba(255,255,255,0.04),transparent);
+  border-radius:90px 90px 0 0; position:relative; overflow:hidden;
+}
+.needle{
+  width:4px; height:95px; background:var(--danger);
+  position:absolute; bottom:0; left:50%;
+  transform-origin:bottom center;
+  transition:transform .7s ease-out;
+}
+
+/* ---------------------------------------------------
+   BARS
+----------------------------------------------------*/
+.bars{display:flex; gap:10px; align-items:flex-end; height:120px; margin-top:14px;}
+.bar{
+  flex:1; border-radius:10px;
+  background:linear-gradient(180deg,var(--accent2),var(--accent));
+  display:flex; justify-content:center; align-items:flex-end;
+  color:#00121a; font-weight:800;
+  padding-bottom:6px; min-height:6px;
+}
+
+/* ---------------------------------------------------
+   POPUP
+----------------------------------------------------*/
+#threatPopup{
+  position:fixed; bottom:20px; right:20px;
+  background:var(--card); padding:16px;
+  border-left:6px solid var(--danger);
+  border-radius:10px; display:none;
+}
+
+/* ---------------------------------------------------
+   SIMULATION OVERLAY
+----------------------------------------------------*/
+#simOverlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none; justify-content:center; align-items:center;
+  z-index:999;
+}
+#simCard{
+  width:660px; max-width:92%;
+  background:var(--card); border-radius:12px;
+  padding:20px; border:1px solid var(--glass);
+}
+.progress{
+  height:14px; background:rgba(255,255,255,0.06);
+  border-radius:10px; overflow:hidden; margin:12px 0;
+}
+.progress .bar{
+  height:100%; width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .35s;
+}
+
+/* ---------------------------------------------------
+   FOOTER
+----------------------------------------------------*/
+.footer{
+  text-align:center; padding:14px;
+  margin-top:20px; color:var(--muted); font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo"><img src="images.png">SENTINEL</div>
+  <div class="controls">
+    <button class="ghost" id="exportBtn">Export Logs</button>
+    <button class="btn" id="themeBtn">Toggle Theme</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="layout">
+
+    <!-- LEFT PANEL -->
+    <div class="panel">
+      <h2 class="title">Sentinel — EchoGuard</h2>
+      <div class="muted">Live monitoring · Threat detection · Auto-defense</div>
+
+      <div id="permGrid" class="perm-grid"></div>
+
+      <div style="display:flex; gap:8px; margin-top:16px">
+        <button class="ghost" id="autoBtn">Auto-Defense: OFF</button>
+        <button class="ghost" id="blockAll">Block Access All</button>
+        <button class="ghost" id="simBtn">Quick Scan</button>
+      </div>
+
+      <h3 style="margin-top:18px;">Live Security Log</h3>
+      <div id="logBox" class="log-box"></div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel">
+      <h3 class="title">Threat Analytics</h3>
+      <div class="muted">Scores · Permission Load · Incidents</div>
+
+      <div style="display:flex; gap:18px; margin-top:16px; align-items:center">
+        <div class="dial"><div id="needle" class="needle"></div></div>
+
+        <div>
+          <div class="small">Threat Score</div>
+          <div id="scoreVal" style="font-size:32px;font-weight:900;color:var(--danger)">0</div>
+        </div>
+
+        <div style="flex:1">
+          <div class="small">Permission Usage</div>
+          <div id="bars" class="bars"></div>
+        </div>
+      </div>
+
+      <h4 style="margin-top:16px;">Recent Incidents</h4>
+      <div id="incidents"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIM POPUP -->
+<div id="simOverlay">
+  <div id="simCard">
+    <h3>Security Simulation</h3>
+    <div class="muted">Simulated phishing · unauthorized OTP · background access</div>
+
+    <div class="progress"><div id="simBar" class="bar"></div></div>
+
+    <div style="display:flex; justify-content:space-between;">
+      <div class="muted">Stage: <span id="simStage">Idle</span></div>
+      <div>
+        <button class="ghost" id="abortSim">Abort</button>
+        <button class="btn" id="closeSim">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT POPUP -->
+<div id="threatPopup">
+  <strong style="color:var(--danger)">⚠ Threat Detected</strong>
+  <div id="popupMsg" class="muted" style="margin-top:6px"></div>
+</div>
+
+<div class="footer">Sentinel — EchoGuard · Final Build · 2025</div>
+
+<script>
+/* ============================================================
+   FAKE API  (UPDATED WITH FULL APP LIST)
+============================================================ */
+const FakeAPI={
+  getApps(){return new Promise(res=>setTimeout(()=>res([
+    /* ---- Original Apps ---- */
+    {name:'Contacts', id:'contacts', risk:20, permissions:{contacts:true,storage:true}},
+    {name:'Google Pay', id:'gpay', risk:55, permissions:{payments:true,otp:true,location:true}},
+    {name:'Camera', id:'camera', risk:40, permissions:{camera:true,mic:false,storage:true}},
+    {name:'WhatsApp', id:'whatsapp', risk:35, permissions:{camera:true,mic:true,contacts:true,storage:true}},
+    {name:'Instagram', id:'insta', risk:30, permissions:{camera:true,mic:true,storage:true,location:false}},
+
+    /* ---- Payment Apps ---- */
+    {name:'PhonePe', id:'phonepe', risk:50, permissions:{payments:true,otp:true,contacts:true}},
+    {name:'Paytm', id:'paytm', risk:48, permissions:{payments:true,location:true,storage:true}},
+    {name:'Amazon Pay', id:'amazonpay', risk:45, permissions:{payments:true,otp:true}},
+    {name:'Mobikwik', id:'mobikwik', risk:42, permissions:{payments:true,storage:true}},
+    {name:'BHIM UPI', id:'bhim', risk:38, permissions:{payments:true,otp:true}},
+
+    /* ---- System / Utility ---- */
+    {name:'Phone Dialer', id:'dialer', risk:25, permissions:{call:true,contacts:true}},
+    {name:'Call Logs', id:'calllogs', risk:27, permissions:{call:true,storage:true}},
+    {name:'Chrome Browser', id:'chrome', risk:33, permissions:{internet:true,storage:true,location:true}},
+    {name:'Settings', id:'settings', risk:10, permissions:{system:true}},
+    {name:'File Manager', id:'filemgr', risk:41, permissions:{storage:true,contacts:false}},
+    {name:'Security App', id:'security', risk:18, permissions:{system:true,storage:true}},
+
+    /* ---- Social Media ---- */
+    {name:'Facebook', id:'facebook', risk:40, permissions:{contacts:true,storage:true,mic:true}},
+    {name:'Snapchat', id:'snapchat', risk:36, permissions:{camera:true,mic:true,location:true}},
+    {name:'Twitter X', id:'twitterx', risk:32, permissions:{storage:true,location:true}},
+    {name:'Telegram', id:'telegram', risk:34, permissions:{storage:true,contacts:true}},
+    {name:'Meta AI', id:'metaai', risk:44, permissions:{mic:true,internet:true}},
+    {name:'Threads', id:'threads', risk:29, permissions:{storage:true,mic:false}},
+
+    /* ---- Video & Entertainment ---- */
+    {name:'YouTube', id:'youtube', risk:20, permissions:{storage:true}},
+    {name:'Netflix', id:'netflix', risk:28, permissions:{storage:true,location:false}},
+    {name:'Amazon Prime', id:'prime', risk:30, permissions:{storage:true}},
+    {name:'Hotstar', id:'hotstar', risk:26, permissions:{storage:true,location:true}},
+
+    /* ---- AI Apps ---- */
+    {name:'ChatGPT', id:'chatgpt', risk:22, permissions:{internet:true,storage:false}},
+    {name:'Perplexity', id:'perplexity', risk:24, permissions:{internet:true}},
+    {name:'Grok AI', id:'grok', risk:35, permissions:{internet:true,storage:true}},
+
+    /* ---- Shopping ---- */
+    {name:'Flipkart', id:'flipkart', risk:27, permissions:{storage:true,location:true}},
+    {name:'Amazon Shopping', id:'amazonshop', risk:30, permissions:{storage:true,location:true}},
+    {name:'Meesho', id:'meesho', risk:22, permissions:{storage:true}},
+
+    /* ---- Games ---- */
+    {name:'Free Fire', id:'freefire', risk:45, permissions:{storage:true,internet:true}},
+    {name:'BGMI', id:'bgmi', risk:50, permissions:{storage:true,mic:true,internet:true}},
+    {name:'Call of Duty Mobile', id:'codm', risk:47, permissions:{storage:true,mic:true,internet:true}},
+    {name:'PUBG New State', id:'pubg', risk:48, permissions:{storage:true,mic:true,internet:true}}
+  ]),500));},
+
+  block(id){return new Promise(res=>setTimeout(()=>res({ok:true}),300));},
+  log(){return new Promise(res=>setTimeout(()=>res({ok:true}),150));}
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let apps=[];
+let logs=JSON.parse(localStorage.getItem("sentinel_logs")||"[]");
+let autoDefense=false;
+let simRunning=false;
+let simInterval=null;
+
+/* ============================================================
+   ELEMENTS
+============================================================ */
+const permGrid=document.getElementById("permGrid");
+const logBox=document.getElementById("logBox");
+const barsEl=document.getElementById("bars");
+const scoreVal=document.getElementById("scoreVal");
+const needle=document.getElementById("needle");
+const incidentsEl=document.getElementById("incidents");
+const simOverlay=document.getElementById("simOverlay");
+const simBar=document.getElementById("simBar");
+const simStage=document.getElementById("simStage");
+
+/* ============================================================
+   UTILS
+============================================================ */
+function now(){return new Date().toLocaleString();}
+function persist(){localStorage.setItem("sentinel_logs",JSON.stringify(logs));}
+
+function speak(msg){
+  try{
+    const u=new SpeechSynthesisUtterance(msg);
+    u.lang="en-US"; u.rate=1; u.pitch=1;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ============================================================
+   LOGGING SYSTEM
+============================================================ */
+function addLog(msg,level="info"){
+  logs.unshift({t:now(),msg,level});
+  if(logs.length>200) logs.pop();
+  persist();
+
+  FakeAPI.log({msg,level});
+
+  renderLogs();
+  if(level==="critical"){ showPopup(msg); speak("Warning. "+msg); addIncident(msg); }
+}
+
+function renderLogs(){
+  logBox.innerHTML="";
+  logs.forEach(l=>{
+    let d=document.createElement("div");
+    d.className="log "+l.level;
+    d.innerHTML=`<div style="font-weight:800">${l.msg}</div><div class="small">${l.t}</div>`;
+    logBox.appendChild(d);
+  });
+}
+
+function addIncident(msg){
+  const d=document.createElement("div");
+  d.className="log critical";
+  d.innerHTML=`<div style="font-weight:700">${msg}</div><div class="small">${now()}</div>`;
+  incidentsEl.prepend(d);
+}
+
+function showPopup(msg){
+  const p=document.getElementById("threatPopup");
+  document.getElementById("popupMsg").innerText=msg;
+  p.style.display="block";
+  clearTimeout(p._t);
+  p._t=setTimeout(()=>p.style.display="none",4500);
+}
+
+/* ============================================================
+   PERMISSION UI
+============================================================ */
+function renderPerms(){
+  permGrid.innerHTML="";
+
+  apps.forEach(app=>{
+    const card=document.createElement("div");
+    card.className="perm-card";
+
+    const left=document.createElement("div");
+    left.innerHTML=`
+      <div style="font-weight:800">${app.name}</div>
+      <div class="small">Risk: ${app.risk} · ${Object.keys(app.permissions).join(", ")}</div>
+    `;
+
+    const right=document.createElement("div");
+    right.className="perm-right";
+
+    Object.keys(app.permissions).forEach(p=>{
+      const sw=document.createElement("div");
+      sw.className="switch "+(app.permissions[p]?"on":"off");
+
+      const k=document.createElement("div"); 
+      k.className="knob";
+      sw.appendChild(k);
+      sw.title=p;
+
+      sw.onclick=()=>{
+        app.permissions[p]=!app.permissions[p];
+        addLog(`${app.name}: ${p} ${app.permissions[p]?"granted":"blocked"}`, app.permissions[p]?"info":"critical");
+        renderAll();
+      };
+
+      right.appendChild(sw);
+    });
+
+    const b=document.createElement("button");
+    b.className="ghost";
+    b.innerText="Block App";
+    b.onclick=()=>{
+      FakeAPI.block(app.id).then(()=>{
+        Object.keys(app.permissions).forEach(k=>app.permissions[k]=false);
+        addLog(`${app.name} fully blocked`,"critical");
+        renderAll();
+      });
+    };
+    right.appendChild(b);
+
+    card.appendChild(left);
+    card.appendChild(right);
+    permGrid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   ANALYTICS
+============================================================ */
+function renderBars(){
+  barsEl.innerHTML="";
+  const counts={};
+
+  apps.forEach(a=>{
+    Object.keys(a.permissions).forEach(k=>{
+      counts[k]=(counts[k]||0)+(a.permissions[k]?1:0);
+    });
+  });
+
+  Object.keys(counts).forEach(k=>{
+    const el=document.createElement("div");
+    el.className="bar";
+    el.style.height=Math.max(6,(counts[k]/apps.length)*100)+"%";
+    el.innerText=counts[k];
+    barsEl.appendChild(el);
+  });
+}
+
+function computeScore(){
+  let sum=0;
+  apps.forEach(a=>{
+    Object.keys(a.permissions).forEach(k=>{ if(a.permissions[k]) sum+=a.risk; });
+  });
+
+  const score=Math.min(100,Math.round(sum/apps.length));
+  scoreVal.innerText=score;
+
+  needle.style.transform=`rotate(${ -60 + (score/100)*120 }deg)`;
+}
+
+function renderIncidents(){
+  incidentsEl.innerHTML="";
+  logs.filter(l=>l.level==="critical").slice(0,6).forEach(l=> addIncident(l.msg));
+}
+
+function renderAll(){
+  renderPerms();
+  renderLogs();
+  renderBars();
+  computeScore();
+  renderIncidents();
+}
+
+/* ============================================================
+   SIMULATION ENGINE
+============================================================ */
+function startSimulation(){
+  if(simRunning) return;
+  simRunning=true;
+
+  simOverlay.style.display="flex";
+  simBar.style.width="0%";
+  simStage.innerText="Initializing";
+
+  const stages=[
+    "Phishing Attack",
+    "Unauthorized OTP Read",
+    "Background Camera Access",
+    "Silent Contacts Export",
+    "Containment"
+  ];
+
+  let i=0;
+  simInterval=setInterval(()=>{
+    const p=((i+1)/stages.length)*100;
+    simBar.style.width=p+"%";
+    simStage.innerText=stages[i];
+
+    addLog("Sim: "+stages[i],"critical");
+
+    renderAll();
+    i++;
+
+    if(i>=stages.length){
+      clearInterval(simInterval);
+      simRunning=false;
+      simStage.innerText="Complete";
+      setTimeout(()=>simOverlay.style.display="none",900);
+    }
+  },1100);
+}
+
+function abortSim(){
+  if(simRunning){
+    clearInterval(simInterval);
+    simRunning=false;
+    simOverlay.style.display="none";
+    addLog("Simulation aborted","info");
+  }
+}
+
+/* ============================================================
+   AUTO-DEFENSE ENGINE
+============================================================ */
+function toggleAuto(){
+  autoDefense=!autoDefense;
+  document.getElementById("autoBtn").innerText="Auto-Defense: "+(autoDefense?"ON":"OFF");
+  addLog("Auto-Defense "+(autoDefense?"enabled":"disabled"),"info");
+}
+
+function autoCheck(){
+  if(!autoDefense) return;
+
+  apps.forEach(app=>{
+    const active=Object.keys(app.permissions).filter(k=> app.permissions[k]);
+
+    if(active.length>=3){
+      addLog(`Auto-Defense: ${app.name} excessive permissions blocked`,"critical");
+      active.forEach(k=> app.permissions[k]=false);
+      renderAll(); return;
+    }
+
+    ["mic","location","otp"].forEach(k=>{
+      if(app.permissions[k]){
+        app.permissions[k]=false;
+        addLog(`Auto-Defense: Dangerous permission ${k} blocked in ${app.name}`,"critical");
+      }
+    });
+
+    if(app.risk>45){
+      if(active.length){
+        const k=active[0];
+        app.permissions[k]=false;
+        addLog(`Auto-Defense: ${app.name} high-risk permission ${k} blocked`,"critical");
+      }
+    }
+  });
+
+  renderAll();
+}
+setInterval(autoCheck,3000);
+
+/* ============================================================
+   EXPORT LOGS
+============================================================ */
+function exportLogs(){
+  const data=logs.map(l=>`${l.t} - ${l.msg}`).join("\n");
+  const blob=new Blob([data],{type:"text/plain"});
+  const url=URL.createObjectURL(blob);
+
+  const a=document.createElement("a");
+  a.href=url; a.download="sentinel_logs.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+  addLog("Logs exported","info");
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function init(){
+  FakeAPI.getApps().then(list=>{
+    apps=list; renderAll();
+  });
+
+  document.getElementById("simBtn").onclick=startSimulation;
+  document.getElementById("abortSim").onclick=abortSim;
+  document.getElementById("closeSim").onclick=()=>{simOverlay.style.display="none"; simRunning=false;};
+  document.getElementById("blockAll").onclick=()=>{
+    apps.forEach(a=>Object.keys(a.permissions).forEach(k=>a.permissions[k]=false));
+    addLog("All permissions blocked","critical"); renderAll();
+  };
+  document.getElementById("autoBtn").onclick=toggleAuto;
+  document.getElementById("exportBtn").onclick=exportLogs;
+  document.getElementById("themeBtn").onclick=()=>document.body.classList.toggle("light");
+
+  if(logs.length===0){
+    addLog("System initialized","info");
+    addLog("Monitoring started","info");
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

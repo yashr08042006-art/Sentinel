@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cyber-Cloud Logo</title>
+
+  <style>
+    :root{
+      --cloud-1:#2bb0ff;
+      --cloud-2:#1766ff;
+      --accent:#00e6a8;
+      --shield:#0f2b5a;
+      --glow: rgba(0,230,168,0.15);
+    }
+
+    /* REMOVE FULLSCREEN BACKGROUND */
+    body{
+      margin:0;
+      padding:0;
+      background:transparent !important;
+      overflow:hidden;
+    }
+
+    /* LOGO AUTO FITS IFRAME */
+    .logo-wrap{
+      width:100%;
+      height:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      overflow:hidden;
+    }
+
+    svg{
+      width:100%;
+      height:100%;
+    }
+
+    /* ORIGINAL ANIMATIONS (unchanged) */
+    .floating{animation:floatY 3.6s ease-in-out infinite;}
+    @keyframes floatY{
+      0%{transform:translateY(0)}
+      50%{transform:translateY(-8px)}
+      100%{transform:translateY(0)}
+    }
+
+    .cloud{
+      filter:drop-shadow(0 10px 20px rgba(10,30,60,0.6));
+      animation:cloudBreath 6s ease-in-out infinite;
+    }
+    @keyframes cloudBreath{
+      0%{transform:translate(60,40) scale(1)}
+      50%{transform:translate(60,34) scale(1.02)}
+      100%{transform:translate(60,40) scale(1)}
+    }
+
+    .shield{
+      animation:shieldPulse 3.6s ease-in-out infinite;
+      filter:drop-shadow(0 12px 28px rgba(16,120,255,0.12))
+    }
+    @keyframes shieldPulse{
+      0%{transform:scale(1);}
+      40%{transform:scale(1.03);}
+      100%{transform:scale(1);}
+    }
+
+    .trace{
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-width:6;
+      stroke:var(--accent);
+      fill:none;
+      stroke-dasharray:120;
+      stroke-dashoffset:120;
+      animation:dash 2s ease-out infinite 0.6s
+    }
+    @keyframes dash{to{stroke-dashoffset:0}}
+
+    .glow{fill:var(--glow)}
+
+    @keyframes glowShift1{
+      0%{transform:translate(0,0);}
+      40%{transform:translate(2px,-2px);}
+      70%{transform:translate(-1px,2px);}
+      100%{transform:translate(0,0);}
+    }
+
+    @keyframes glowShift2{
+      0%{transform:translate(0,0);}
+      50%{transform:translate(-2px,1px);}
+      90%{transform:translate(1px,-1px);}
+      100%{transform:translate(0,0);}
+    }
+
+    @keyframes sPulse{
+      0%{transform:scale(1);}
+      50%{transform:scale(1.04);}
+      100%{transform:scale(1);}
+    }
+
+    @keyframes scan{
+      0%{transform:translateY(-60px); opacity:0;}
+      30%{opacity:1;}
+      100%{transform:translateY(60px); opacity:0;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="logo-wrap">
+    <svg viewBox="0 0 640 440" class="floating">
+
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1">
+          <stop offset="0" stop-color="var(--cloud-1)"/>
+          <stop offset="1" stop-color="var(--cloud-2)"/>
+        </linearGradient>
+      </defs>
+
+      <g class="cloud" transform="translate(60,40)">
+        <path d="M144 200c-66 0-120-46-120-102 0-56 54-102 120-102 
+                 18 0 36 4 52 12 24-44 84-72 144-48 44 18 76 60 76 110 
+                 0 62-54 112-120 112H144z"
+              fill="url(#g1)" opacity="0.98"/>
+        <ellipse cx="300" cy="154" rx="180" ry="60" class="glow"/>
+      </g>
+
+      <g transform="translate(160,82)"> 
+
+        <g class="shield">
+          <path d="M160 40c-62 0-112 40-112 90 
+                   0 86 80 170 112 170s112-84 112-170
+                   c0-50-50-90-112-90z"
+                fill="var(--shield)" opacity="0.98"
+                stroke="#12345a" stroke-width="4"/>
+
+          <path d="M160 66c-48 0-88 32-88 64 
+                   0 61 64 120 88 120s88-59 88-120
+                   c0-32-40-64-88-64z"
+                fill="transparent" stroke="#59a1ff" stroke-width="7"/>
+        </g>
+
+        <g transform="translate(160,180)" style="transform-box:fill-box;transform-origin:center;">
+          <text text-anchor="middle"
+                style="font-size:92px; font-family:'Courier New'; 
+                       font-weight:900; letter-spacing:-4px;
+                       fill:var(--accent);
+                       animation:sPulse 3s ease-in-out infinite;">
+            S
+          </text>
+        </g>
+
+        <g transform="translate(260,160)">
+          <path class="trace" d="M0 0h80l20-16"/>
+          <circle cx="120" cy="-16" r="10" fill="#0cf2b6"/>
+          <path class="trace" d="M10 22h70v-12"/>
+          <circle cx="100" cy="10" r="8" fill="#0cf2b6"/>
+          <path class="trace" d="M-10 44h80"/>
+          <circle cx="90" cy="44" r="8" fill="#0cf2b6"/>
+        </g>
+
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

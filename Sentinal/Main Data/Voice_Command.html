@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Password</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at center, #0a1a2f, #02060d);
+      color: #e6f7ff;
+      overflow: hidden;
+    }
+
+    .left-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .logo-wrapper { width: 240px; }
+    .logo-object { width: 100%; height: 100%; }
+
+    .brand-name {
+      font-size: 52px; font-weight: bold;
+      letter-spacing: 3px; color: #00e6a8;
+      text-shadow: 0 0 14px rgba(0,255,180,0.5);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      padding: 40px; border-radius: 18px;
+      text-align: center; backdrop-filter: blur(10px);
+      box-shadow: 0 0 35px rgba(0,150,255,0.25);
+    }
+
+    #status { margin-top: 12px; font-size: 16px; color: #9cf; }
+
+    
+    .start-btn {
+      margin-top: 25px;
+      padding: 12px 30px;
+      background: #00e6a8;
+      color: #000;
+      font-size: 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .start-btn:hover { transform: scale(1.05); }
+  </style>
+</head>
+
+<body>
+
+  <div class="left-section">
+    <div class="logo-wrapper">
+      <object data="logo.html" class="logo-object"></object>
+    </div>
+    <div class="brand-name">SENTINEL</div>
+  </div>
+
+  <div class="card">
+    <h2>🎤 Voice Password</h2>
+    <p>Click the button to activate mic:</p>
+    <div id="status">Waiting for mic permission…</div>
+
+    <button class="start-btn" id="startBtn">START LISTENING</button>
+  </div>
+
+  <script>
+    const passwords = [
+      "activate voice command",
+      "use voice command",
+      "enter voice command"
+    ];
+
+    const status = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+
+    
+    function speak(text) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      u.pitch = 1;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || -window.webkitSpeechRecognition;
+    let recognition = null;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.continuous = true;
+
+      recognition.addEventListener("result", (e) => {
+        const text = e.results[e.results.length - 1][0].transcript.toLowerCase().trim();
+        status.textContent = "You said: " + text;
+
+        if (passwords.includes(text)) {
+          speak("voice command activated");
+          status.textContent = "✅ Correct password!";
+          setTimeout(() => window.location.href = "Dashboard.html", 300);
+        } else {
+          status.textContent = "❌ Incorrect password!";
+          speak("incorrect password");
+        }
+      });
+
+     
+      recognition.addEventListener("end", () => recognition.start());
+    }
+
+   
+    startBtn.addEventListener("click", () => {
+      if (recognition) {
+        status.textContent = "Listening...";
+        recognition.start();
+        speak("mic activated, say your voice command sir");
+        startBtn.style.display = "none"; // hide button after starting
+      }
+    });
+  </script>
+
+</body>
+</html>
